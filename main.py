@@ -19,9 +19,6 @@ from scipy.io.wavfile import write
 SAMPLE_RATE = 16000
 TEMP_AUDIO_FILENAME = "temp_audio.wav"
 SUPPORTED_AUDIO_TYPES = ['wav', 'mp3', 'ogg']
-DEFAULT_RECORDING_DURATION = 10
-MIN_RECORDING_DURATION = 5
-MAX_RECORDING_DURATION = 30
 
 def save_audio(
     audio_data: Union[np.ndarray, st.runtime.uploaded_file_manager.UploadedFile],
@@ -87,10 +84,9 @@ def display_instructions() -> None:
     """Display application instructions."""
     st.markdown("### Instructions")
     st.markdown("""
-    1. Click 'Start Recording' to begin
-    2. Speak clearly into your microphone
-    3. Recording will automatically stop after the set duration
-    4. Your transcription will appear below
+    1. Upload an audio file (.wav, .mp3, or .ogg format)
+    2. Wait for the transcription to complete
+    3. Your transcription will appear below
     """)
 
 def handle_file_upload(model: whisper.Whisper) -> None:
@@ -165,13 +161,6 @@ def main() -> None:
     with col1:
         display_instructions()
         
-        duration = st.slider(
-            "Recording Duration (seconds)",
-            MIN_RECORDING_DURATION,
-            MAX_RECORDING_DURATION,
-            DEFAULT_RECORDING_DURATION
-        )
-        
         # Model selection
         model_name = st.selectbox(
             "Select Model",
@@ -181,19 +170,6 @@ def main() -> None:
         st.session_state.model = load_whisper_model(model_name)
         
         handle_file_upload(st.session_state.model)
-        
-        if st.button("Start Recording"):
-            with st.spinner("Recording..."):
-                try:
-                    audio_data = record_audio(duration)
-                    temp_path = save_audio(audio_data, SAMPLE_RATE)
-                    
-                    with st.spinner("Transcribing..."):
-                        result = st.session_state.model.transcribe(temp_path)
-                        st.session_state.transcription = result["text"]
-                finally:
-                    if 'temp_path' in locals():
-                        os.remove(temp_path)
         
         if st.session_state.transcription:
             st.markdown("### Transcription")
