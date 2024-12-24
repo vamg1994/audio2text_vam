@@ -10,7 +10,6 @@ from typing import Optional, Tuple, Union
 
 # Third-party imports
 import numpy as np
-import sounddevice as sd
 import streamlit as st
 import whisper
 from scipy.io.wavfile import write
@@ -62,18 +61,7 @@ def record_audio(duration: int, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     Returns:
         np.ndarray: Recorded audio data
     """
-    try:
-        recording = sd.rec(
-            int(duration * sample_rate),
-            samplerate=sample_rate,
-            channels=1,
-            dtype=np.float32
-        )
-        sd.wait()
-        return recording
-    except Exception as e:
-        st.error(f"Error recording audio: {str(e)}")
-        raise
+
 
 def create_ui_columns() -> Tuple[st.delta_generator.DeltaGenerator, 
                                 st.delta_generator.DeltaGenerator]:
