@@ -127,7 +127,7 @@ def main() -> None:
         # Model selection
         model_name = st.selectbox(
             "Select Model",
-            ["tiny", "base", "small"],
+            ["tiny", "base"],
             help="Larger models are more accurate but slower"
         )
         st.session_state.model = load_whisper_model(model_name)
