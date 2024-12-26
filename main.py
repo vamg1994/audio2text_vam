@@ -17,7 +17,7 @@ from scipy.io.wavfile import write
 # Constants
 SAMPLE_RATE = 16000
 TEMP_AUDIO_FILENAME = "temp_audio.wav"
-SUPPORTED_AUDIO_TYPES = ['wav', 'mp3', 'ogg']
+SUPPORTED_AUDIO_TYPES = ['wav', 'mp3', 'ogg','opus']
 
 def save_audio(audio_file: st.runtime.uploaded_file_manager.UploadedFile) -> str:
     """
