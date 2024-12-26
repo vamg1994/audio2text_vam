@@ -12,6 +12,7 @@ import numpy as np
 import streamlit as st
 import whisper
 from scipy.io.wavfile import write
+import torch
 
 # Constants
 SAMPLE_RATE = 16000
@@ -23,9 +24,16 @@ WHISPER_MODEL = None  # Global model instance
 def initialize_model(model_name: str) -> whisper.Whisper:
     """Initialize Whisper model globally."""
     global WHISPER_MODEL
-    if WHISPER_MODEL is None:
-        WHISPER_MODEL = whisper.load_model(model_name)
-    return WHISPER_MODEL
+    try:
+        if WHISPER_MODEL is None:
+            # Force CPU device if CUDA is not available
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            WHISPER_MODEL = whisper.load_model(model_name).to(device)
+        return WHISPER_MODEL
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        st.error("Please ensure you have the correct versions of torch and whisper installed.")
+        return None
 
 def save_audio(audio_file: st.runtime.uploaded_file_manager.UploadedFile) -> str:
     """

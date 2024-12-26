@@ -1,4 +1,5 @@
-streamlit
+streamlit>=1.22.0
 openai-whisper
-numpy
-scipy 
+numpy>=1.21.0
+scipy>=1.9.0
+torch>=2.0.0 
