@@ -1,6 +1,5 @@
 """
 Audio Transcription Application using Whisper
-Supports both microphone recording and file uploads.
 """
 
 # Standard library imports
@@ -18,6 +17,15 @@ from scipy.io.wavfile import write
 SAMPLE_RATE = 16000
 TEMP_AUDIO_FILENAME = "temp_audio.wav"
 SUPPORTED_AUDIO_TYPES = ['wav', 'mp3', 'ogg','opus']
+MAX_UPLOAD_SIZE_MB = 10
+WHISPER_MODEL = None  # Global model instance
+
+def initialize_model(model_name: str) -> whisper.Whisper:
+    """Initialize Whisper model globally."""
+    global WHISPER_MODEL
+    if WHISPER_MODEL is None:
+        WHISPER_MODEL = whisper.load_model(model_name)
+    return WHISPER_MODEL
 
 def save_audio(audio_file: st.runtime.uploaded_file_manager.UploadedFile) -> str:
     """
@@ -29,8 +37,15 @@ def save_audio(audio_file: st.runtime.uploaded_file_manager.UploadedFile) -> str
     Returns:
         str: Path to the saved temporary file
     """
-    temp_dir = tempfile.gettempdir()  # Use system temp directory
-    temp_path = os.path.join(temp_dir, TEMP_AUDIO_FILENAME)
+    # Add file size check
+    file_size_mb = audio_file.size / (1024 * 1024)
+    if file_size_mb > MAX_UPLOAD_SIZE_MB:
+        raise ValueError(f"File size exceeds {MAX_UPLOAD_SIZE_MB}MB limit")
+        
+    # Use unique temporary file name
+    temp_dir = tempfile.gettempdir()
+    unique_filename = f"temp_audio_{os.getpid()}_{id(audio_file)}.wav"
+    temp_path = os.path.join(temp_dir, unique_filename)
     
     with open(temp_path, 'wb') as f:
         f.write(audio_file.getvalue())
@@ -86,25 +101,6 @@ def initialize_session_state() -> None:
     """Initialize Streamlit session state variables."""
     if 'transcription' not in st.session_state:
         st.session_state.transcription = ""
-    if 'model' not in st.session_state:
-        st.session_state.model = whisper.load_model("base")
-
-def load_whisper_model(model_name: str) -> whisper.Whisper:
-    """
-    Load a Whisper model if it's different from the currently loaded model.
-    
-    Args:
-        model_name: Name of the Whisper model to load
-        
-    Returns:
-        whisper.Whisper: Loaded model
-    """
-    if not hasattr(st.session_state, 'current_model_name') or \
-       st.session_state.current_model_name != model_name:
-        with st.spinner(f"Loading {model_name} model..."):
-            st.session_state.model = whisper.load_model(model_name)
-            st.session_state.current_model_name = model_name
-    return st.session_state.model
 
 def main() -> None:
     """Main application function."""
@@ -116,7 +112,7 @@ def main() -> None:
     )
     
     st.title("VAM Audio Transcription")
-    st.write("Convert your speech to text using OpenAI's Whisper model")
+    st.write("Convert your audio to text using OpenAI's Whisper model")
     
     initialize_session_state()
     col1, col2 = create_ui_columns()
@@ -124,15 +120,15 @@ def main() -> None:
     with col1:
         display_instructions()
         
-        # Model selection
+        # Modified model selection
         model_name = st.selectbox(
             "Select Model",
-            ["tiny", "base"],
+            ["tiny", "base", "small"],
             help="Larger models are more accurate but slower"
         )
-        st.session_state.model = load_whisper_model(model_name)
+        model = initialize_model(model_name)  # Use global model instance
         
-        handle_file_upload(st.session_state.model)
+        handle_file_upload(model)
         
         if st.session_state.transcription:
             st.markdown("### Transcription")
